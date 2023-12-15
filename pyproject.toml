@@ -27,7 +27,7 @@ dependencies = [
 ]
 
 [project.scripts]
-absolute_to_relative_sibling = "absolute_to_relative_sibling:main"
+absolute-to-relative-sibling = "absolute_to_relative_sibling:main"
 
 [tool.hatch.version]
 path = "absolute_to_relative_sibling/__init__.py"
