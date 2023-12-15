@@ -24,10 +24,11 @@ classifiers = [
 ]
 dependencies = [
     "tokenize_rt>=5.0.0",
+    "typer==0.9.0",
 ]
 
 [project.scripts]
-absolute-to-relative-sibling = "absolute_to_relative_sibling:main"
+absolute-to-relative-sibling = "absolute_to_relative_sibling:app"
 
 [tool.hatch.version]
 path = "absolute_to_relative_sibling/__init__.py"
@@ -76,9 +77,6 @@ ignore = [
 
 [tool.ruff.isort]
 known-first-party = ["absolute_to_relative_sibling"]
-
-[tool.ruff.lint.isort]
-required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.per-file-ignores]
 # Tests can use magic values, assertions, and relative imports

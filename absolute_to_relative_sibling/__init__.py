@@ -1,20 +1,13 @@
-from __future__ import annotations
-
-import argparse
 import ast
 from pathlib import Path
+from typing import List, Tuple
 
 import tokenize_rt
+from typer import Typer
 
 __version__ = "0.1.0"
 
-
-def introspect_python_modules(root_path: Path) -> list[str]:
-    return [
-        path.name
-        for path in root_path.glob("*")
-        if path.is_dir() and (path / "__init__.py").exists()
-    ]
+app = Typer()
 
 
 def read_file(path: Path) -> str:
@@ -42,7 +35,7 @@ def replace_tokens(python_file: Path) -> None:
 
 def replace_tokens_file(
     contents_text: str, python_file: Path, relative_to_module: str
-) -> tuple[str, bool]:
+) -> Tuple[str, bool]:
     is_fixed = False
     file_ast = ast.parse(contents_text)
     tokens = tokenize_rt.src_to_tokens(contents_text)
@@ -68,15 +61,15 @@ def replace_tokens_file(
 
 
 def replace_tokens_import(
-    tokens: list[tokenize_rt.Token], node: ast.ImportFrom, import_stmt: list[str]
-) -> tuple[list[tokenize_rt.Token], bool]:
+    tokens: List[tokenize_rt.Token], node: ast.ImportFrom, import_stmt: List[str]
+) -> Tuple[List[tokenize_rt.Token], bool]:
     is_fixed = False
 
-    new_tokens: list[tokenize_rt.Token] = []
+    new_tokens: List[tokenize_rt.Token] = []
 
     remove_op_dot = False
 
-    new_tokens: list[tokenize_rt.Token] = []
+    new_tokens: List[tokenize_rt.Token] = []
 
     for token in tokens:
         if remove_op_dot is True:
@@ -92,18 +85,13 @@ def replace_tokens_import(
     return new_tokens, is_fixed
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("file_or_dirs", nargs="+", type=Path)
-
-    args = parser.parse_args()
-
-    for file_or_dir in args.file_or_dirs:
+def main(file_or_dirs: List[Path]):
+    for file_or_dir in file_or_dirs:
         if not file_or_dir.exists():
             msg = f"{file_or_dir} does not exist"
             raise ValueError(msg)
 
-    for file_or_dir in args.file_or_dirs:
+    for file_or_dir in file_or_dirs:
         if file_or_dir.is_dir():
             for python_file in file_or_dir.glob("**/*.py"):
                 replace_tokens(python_file)
@@ -113,8 +101,9 @@ def main() -> int:
             msg = f"{file_or_dir} must be a directory or file"
             raise ValueError(msg)
 
-    return 0
+
+app.command()(main)
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    app()
