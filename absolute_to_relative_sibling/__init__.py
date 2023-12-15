@@ -17,48 +17,57 @@ def introspect_python_modules(root_path: Path) -> list[str]:
     ]
 
 
+def read_file(path: Path) -> str:
+    with path.open(mode="rb") as file:
+        contents_bytes = file.read()
+
+    return contents_bytes.decode()
+
+
+def write_file(path: Path, contents_text: str) -> None:
+    with path.open(mode="w", encoding="UTF-8", newline="") as file:
+        file.write(contents_text)
+
+
 def replace_tokens(python_file: Path) -> None:
     relative_to_module = ".".join(python_file.parts[:-1])
 
-    with python_file.open(mode="rb") as file:
-        contents_bytes = file.read()
+    contents_text = read_file(python_file)
 
-        try:
-            contents_text = contents_bytes.decode()
-        except UnicodeDecodeError:
-            return
-
-        file_ast = ast.parse(contents_text)
-
-        tokens = tokenize_rt.src_to_tokens(contents_text)
-
-        is_fixed = False
-
-        for node in file_ast.body:
-            if (
-                isinstance(node, ast.ImportFrom)
-                and node.module is not None
-                and node.module.startswith(f"{relative_to_module}.")
-            ):
-                print(python_file, node.lineno)
-                print(
-                    "Can be replace by: from"
-                    f" {node.module.replace(relative_to_module, '')} import"
-                    f" {', '.join(i.name for i in node.names)}"
-                )
-
-                import_stmt = relative_to_module.split(".")
-
-                tokens, is_fixed = replace_tokens_2(tokens, node, import_stmt)
+    contents_text, is_fixed = replace_tokens_file(contents_text, python_file, relative_to_module)
 
     if is_fixed is True:
-        contexts_text = tokenize_rt.tokens_to_src(tokens)
-
-        with python_file.open(mode="w", encoding="UTF-8", newline="") as f:
-            f.write(contexts_text)
+        write_file(python_file, contents_text)
 
 
-def replace_tokens_2(
+def replace_tokens_file(
+    contents_text: str, python_file: Path, relative_to_module: str
+) -> tuple[str, bool]:
+    is_fixed = False
+    file_ast = ast.parse(contents_text)
+    tokens = tokenize_rt.src_to_tokens(contents_text)
+
+    for node in file_ast.body:
+        if (
+            isinstance(node, ast.ImportFrom)
+            and node.module is not None
+            and node.module.startswith(f"{relative_to_module}.")
+        ):
+            print(python_file, node.lineno)
+            print(
+                "Can be replace by: from"
+                f" {node.module.replace(relative_to_module, '')} import"
+                f" {', '.join(i.name for i in node.names)}"
+            )
+
+            import_stmt = relative_to_module.split(".")
+
+            tokens, is_fixed = replace_tokens_import(tokens, node, import_stmt)
+
+    return tokenize_rt.tokens_to_src(tokens), is_fixed
+
+
+def replace_tokens_import(
     tokens: list[tokenize_rt.Token], node: ast.ImportFrom, import_stmt: list[str]
 ) -> tuple[list[tokenize_rt.Token], bool]:
     is_fixed = False
