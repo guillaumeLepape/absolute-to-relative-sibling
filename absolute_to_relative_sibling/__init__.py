@@ -5,6 +5,8 @@ from typing import List, Tuple
 import tokenize_rt
 from typer import Typer
 
+from .git import get_gitignore
+
 __version__ = "0.1.0"
 
 app = Typer()
@@ -94,8 +96,12 @@ def main(file_or_dirs: List[Path]):
     for file_or_dir in file_or_dirs:
         if file_or_dir.is_dir():
             for python_file in file_or_dir.glob("**/*.py"):
+                if get_gitignore(Path()).match_file(python_file.relative_to(Path())):
+                    continue
                 replace_tokens(python_file)
         elif file_or_dir.is_file():
+            if get_gitignore(Path()).match_file(file_or_dir.relative_to(Path())):
+                continue
             replace_tokens(file_or_dir)
         else:
             msg = f"{file_or_dir} must be a directory or file"
