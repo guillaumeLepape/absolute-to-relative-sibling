@@ -10,14 +10,9 @@ from typer.testing import CliRunner
 
 from absolute_to_relative_sibling import app
 
+from .utils import setup_app
+
 runner = CliRunner()
-
-
-def setup_app():
-    Path("foo").mkdir()
-    Path("foo", "__init__.py").write_text("")
-    Path("foo", "bar.py").write_text("a = 1\nb = 2*a")
-    Path("foo", "baz.py").write_text("from foo.toto import a\nfrom foo.toto import b as alias_b\n")
 
 
 def test_cli_directory():
@@ -33,7 +28,7 @@ def test_cli_directory():
             f"foo{os.sep}baz.py 2\n"
             "Can be replace by: from .toto import b\n"
         )
-        assert Path("foo/baz.py").read_text() == (
+        assert Path("foo", "baz.py").read_text() == (
             "from .toto import a\nfrom .toto import b as alias_b\n"
         )
 
@@ -50,7 +45,7 @@ def test_cli_file():
             f"foo{os.sep}baz.py 2\n"
             "Can be replace by: from .toto import b\n"
         )
-        assert Path("foo/baz.py").read_text() == (
+        assert Path("foo", "baz.py").read_text() == (
             "from .toto import a\nfrom .toto import b as alias_b\n"
         )
 
