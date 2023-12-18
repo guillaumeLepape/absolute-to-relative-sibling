@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "absolute-to-relative_sibling"
+name = "absolute-to-relative-sibling"
 dynamic = ["version"]
 description = "Rewrite your absolute imports to relative imports from siblings"
 readme = "README.md"
