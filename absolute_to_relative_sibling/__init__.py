@@ -1,8 +1,8 @@
 import ast
+from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Tuple
+from typing import List
 
-import tokenize_rt
 from typer import Typer
 
 from .git import get_gitignore
@@ -19,28 +19,28 @@ def read_file(path: Path) -> str:
     return contents_bytes.decode()
 
 
-def write_file(path: Path, contents_text: str) -> None:
-    with path.open(mode="w", encoding="UTF-8", newline="") as file:
-        file.write(contents_text)
-
-
-def replace_tokens(python_file: Path) -> None:
+def check_file(python_file: Path) -> None:
     relative_to_module = ".".join(python_file.parts[:-1])
 
     contents_text = read_file(python_file)
 
-    contents_text, is_fixed = replace_tokens_file(contents_text, python_file, relative_to_module)
+    issues = detect_issues(contents_text, python_file, relative_to_module)
 
-    if is_fixed is True:
-        write_file(python_file, contents_text)
+    for issue in issues:
+        print(f"{issue.file}:{issue.line} - {issue.message}")
 
 
-def replace_tokens_file(
-    contents_text: str, python_file: Path, relative_to_module: str
-) -> Tuple[str, bool]:
-    is_fixed = False
+@dataclass
+class Issue:
+    file: Path
+    line: int
+    message: str
+
+
+def detect_issues(contents_text: str, python_file: Path, relative_to_module: str) -> List[Issue]:
     file_ast = ast.parse(contents_text)
-    tokens = tokenize_rt.src_to_tokens(contents_text)
+
+    result: List[Issue] = []
 
     for node in file_ast.body:
         if (
@@ -48,43 +48,17 @@ def replace_tokens_file(
             and node.module is not None
             and node.module.startswith(f"{relative_to_module}.")
         ):
-            print(python_file, node.lineno)
-            print(
-                "Can be replace by: from"
-                f" {node.module.replace(relative_to_module, '')} import"
-                f" {', '.join(i.name for i in node.names)}"
+            result.append(
+                Issue(
+                    file=python_file,
+                    line=node.lineno,
+                    message="rewrite as: from"
+                    f" {node.module.replace(relative_to_module, '')} import"
+                    f" {', '.join(i.name for i in node.names)}",
+                )
             )
 
-            import_stmt = relative_to_module.split(".")
-
-            tokens, is_fixed = replace_tokens_import(tokens, node, import_stmt)
-
-    return tokenize_rt.tokens_to_src(tokens), is_fixed
-
-
-def replace_tokens_import(
-    tokens: List[tokenize_rt.Token], node: ast.ImportFrom, import_stmt: List[str]
-) -> Tuple[List[tokenize_rt.Token], bool]:
-    is_fixed = False
-
-    new_tokens: List[tokenize_rt.Token] = []
-
-    remove_op_dot = False
-
-    new_tokens: List[tokenize_rt.Token] = []
-
-    for token in tokens:
-        if remove_op_dot is True:
-            remove_op_dot = False
-        elif token.name == "NAME" and token.src in import_stmt and token.line == node.lineno:
-            is_fixed = True
-            if token.src != import_stmt[-1] or import_stmt.count(token.src) > 1:
-                remove_op_dot = True
-            import_stmt.remove(token.src)
-        else:
-            new_tokens.append(token)
-
-    return new_tokens, is_fixed
+    return result
 
 
 def main(file_or_dirs: List[Path]):
@@ -98,11 +72,11 @@ def main(file_or_dirs: List[Path]):
             for python_file in file_or_dir.glob("**/*.py"):
                 if get_gitignore(Path()).match_file(python_file.relative_to(Path())):
                     continue
-                replace_tokens(python_file)
+                check_file(python_file)
         elif file_or_dir.is_file():
             if get_gitignore(Path()).match_file(file_or_dir.relative_to(Path())):
                 continue
-            replace_tokens(file_or_dir)
+            check_file(file_or_dir)
         else:
             msg = f"{file_or_dir} must be a directory or file"
             raise ValueError(msg)
