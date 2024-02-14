@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 import socket
 import sys
-from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
@@ -23,13 +22,8 @@ def test_cli_directory():
 
         assert result.exit_code == 0
         assert result.stdout == (
-            f"foo{os.sep}baz.py 1\n"
-            "Can be replace by: from .toto import a\n"
-            f"foo{os.sep}baz.py 2\n"
-            "Can be replace by: from .toto import b\n"
-        )
-        assert Path("foo", "baz.py").read_text() == (
-            "from .toto import a\nfrom .toto import b as alias_b\n"
+            f"foo{os.sep}baz.py:1 - rewrite as: from .toto import a\n"
+            f"foo{os.sep}baz.py:2 - rewrite as: from .toto import b\n"
         )
 
 
@@ -40,13 +34,8 @@ def test_cli_file():
 
         assert result.exit_code == 0
         assert result.stdout == (
-            f"foo{os.sep}baz.py 1\n"
-            "Can be replace by: from .toto import a\n"
-            f"foo{os.sep}baz.py 2\n"
-            "Can be replace by: from .toto import b\n"
-        )
-        assert Path("foo", "baz.py").read_text() == (
-            "from .toto import a\nfrom .toto import b as alias_b\n"
+            f"foo{os.sep}baz.py:1 - rewrite as: from .toto import a\n"
+            f"foo{os.sep}baz.py:2 - rewrite as: from .toto import b\n"
         )
 
 

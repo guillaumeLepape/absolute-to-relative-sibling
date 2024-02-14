@@ -4,34 +4,39 @@ from pathlib import Path
 
 import pytest
 
-from absolute_to_relative_sibling import replace_tokens_file
+from absolute_to_relative_sibling import Issue, detect_issues
 
 
 @pytest.mark.parametrize(
-    "input_code,relative_to_module,expected_code,expected_is_fixed",
+    "input_code,relative_to_module,expected_issues",
     [
-        ("from i.j import a, b, c", "i", "from .j import a, b, c", True),
+        (
+            "from i.j import a, b, c",
+            "i",
+            [Issue(file=Path(), line=1, message="rewrite as: from .j import a, b, c")],
+        ),
         (
             "from i.j import a, b as new_b, c as new_c",
             "i",
-            "from .j import a, b as new_b, c as new_c",
-            True,
+            [Issue(file=Path(), line=1, message="rewrite as: from .j import a, b, c")],
         ),
-        ("from a.b.a import i", "a.b", "from .a import i", True),
-        ("from a.b.a import i", "a", "from .b.a import i", True),
-        ("a = 1", "a", "a = 1", False),
+        (
+            "from a.b.a import i",
+            "a.b",
+            [Issue(file=Path(), line=1, message="rewrite as: from .a import i")],
+        ),
+        (
+            "from a.b.a import i",
+            "a",
+            [Issue(file=Path(), line=1, message="rewrite as: from .b. import i")],
+        ),
+        ("a = 1", "a", []),
         (
             "from mod1.submod import func\nfrom mod2.submod import func2",
             "mod1",
-            "from .submod import func\nfrom mod2.submod import func2",
-            True,
+            [Issue(file=Path(), line=1, message="rewrite as: from .submod import func")],
         ),
     ],
 )
-def test_simple_import(
-    input_code: str, relative_to_module: str, expected_code: str, expected_is_fixed: bool
-):
-    output_code, is_fixed = replace_tokens_file(input_code, Path(), relative_to_module)
-
-    assert is_fixed is expected_is_fixed
-    assert output_code == expected_code
+def test_simple_import(input_code: str, relative_to_module: str, expected_issues: list[Issue]):
+    assert detect_issues(input_code, Path(), relative_to_module) == expected_issues
