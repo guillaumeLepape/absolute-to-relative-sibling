@@ -26,6 +26,16 @@ def test_cli_directory():
             f"foo{os.sep}baz.py:2 - rewrite as: from .toto import b\n"
         )
 
+        os.chdir("foo")
+
+        result = runner.invoke(app, ["."])
+
+        assert result.exit_code == 0
+        assert result.stdout == (
+            "baz.py:1 - rewrite as: from .toto import a\n"
+            "baz.py:2 - rewrite as: from .toto import b\n"
+        )
+
 
 def test_cli_file():
     with runner.isolated_filesystem():

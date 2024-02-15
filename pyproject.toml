@@ -43,6 +43,8 @@ skip-string-normalization = true
 target-version = "py37"
 line-length = 100
 fix = true
+
+[tool.ruff.lint]
 select = [
     "A",
     "ARG",
@@ -76,10 +78,10 @@ ignore = [
     "T201",
 ]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["absolute_to_relative_sibling"]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 # Tests can use magic values, assertions, and relative imports
 "tests/**/*" = ["PLR2004", "S101", "TID252", "FBT001"]
 

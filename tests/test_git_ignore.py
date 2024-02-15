@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -52,4 +53,7 @@ def test_invalid_git_ignore_format():
         assert result.exit_code == 1
         assert result.stdout == ""
         assert isinstance(result.exception, ValueError) is True
-        assert str(result.exception) == "Could not parse .gitignore: Invalid git pattern: '!'"
+        assert re.match(
+            r"Could not parse .+\.gitignore: Invalid git pattern: '!'",
+            str(result.exception),
+        )

@@ -8,35 +8,47 @@ from absolute_to_relative_sibling import Issue, detect_issues
 
 
 @pytest.mark.parametrize(
-    "input_code,relative_to_module,expected_issues",
+    "input_code,parts,expected_issues",
     [
         (
             "from i.j import a, b, c",
-            "i",
+            ["i"],
             [Issue(file=Path(), line=1, message="rewrite as: from .j import a, b, c")],
         ),
         (
             "from i.j import a, b as new_b, c as new_c",
-            "i",
+            ["i"],
             [Issue(file=Path(), line=1, message="rewrite as: from .j import a, b, c")],
         ),
         (
             "from a.b.a import i",
-            "a.b",
+            ["a", "b"],
             [Issue(file=Path(), line=1, message="rewrite as: from .a import i")],
         ),
         (
             "from a.b.a import i",
-            "a",
-            [Issue(file=Path(), line=1, message="rewrite as: from .b. import i")],
+            ["a"],
+            [Issue(file=Path(), line=1, message="rewrite as: from .b.a import i")],
         ),
-        ("a = 1", "a", []),
+        ("a = 1", ["a"], []),
         (
             "from mod1.submod import func\nfrom mod2.submod import func2",
-            "mod1",
+            ["mod1"],
             [Issue(file=Path(), line=1, message="rewrite as: from .submod import func")],
+        ),
+        (
+            (
+                "from mod1.submod import func\n"
+                "from mod2.submod import func2\n"
+                "from mod1.submod import func3"
+            ),
+            ["mod1"],
+            [
+                Issue(file=Path(), line=1, message="rewrite as: from .submod import func"),
+                Issue(file=Path(), line=3, message="rewrite as: from .submod import func3"),
+            ],
         ),
     ],
 )
-def test_simple_import(input_code: str, relative_to_module: str, expected_issues: list[Issue]):
-    assert detect_issues(input_code, Path(), relative_to_module) == expected_issues
+def test_simple_import(input_code: str, parts: list[str], expected_issues: list[Issue]):
+    assert detect_issues(input_code, Path(), parts) == expected_issues
