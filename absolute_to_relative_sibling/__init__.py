@@ -5,7 +5,7 @@ from typing import List
 
 from typer import Typer
 
-from .git import get_gitignore
+from .git import find_project_root, get_gitignore
 
 __version__ = "0.1.0"
 
@@ -20,11 +20,11 @@ def read_file(path: Path) -> str:
 
 
 def check_file(python_file: Path) -> None:
-    relative_to_module = ".".join(python_file.parts[:-1])
+    parts = list(python_file.resolve().parts[:-1])
 
     contents_text = read_file(python_file)
 
-    issues = detect_issues(contents_text, python_file, relative_to_module)
+    issues = detect_issues(contents_text, python_file, parts)
 
     for issue in issues:
         print(f"{issue.file}:{issue.line} - {issue.message}")
@@ -37,26 +37,36 @@ class Issue:
     message: str
 
 
-def detect_issues(contents_text: str, python_file: Path, relative_to_module: str) -> List[Issue]:
+def detect_issues(contents_text: str, python_file: Path, parts: List[str]) -> List[Issue]:
     file_ast = ast.parse(contents_text)
 
     result: List[Issue] = []
 
     for node in file_ast.body:
-        if (
-            isinstance(node, ast.ImportFrom)
-            and node.module is not None
-            and node.module.startswith(f"{relative_to_module}.")
-        ):
-            result.append(
-                Issue(
-                    file=python_file,
-                    line=node.lineno,
-                    message="rewrite as: from"
-                    f" {node.module.replace(relative_to_module, '')} import"
-                    f" {', '.join(i.name for i in node.names)}",
+        if isinstance(node, ast.ImportFrom) and node.module is not None:
+            if "." in node.module:
+                names = node.module.split(".")
+            else:
+                names = [node.module]
+
+            issue_detected = False
+            level: int | None = None
+
+            for i in range(min(len(parts), len(names)) + 1):
+                if parts[-i:] == names[:i]:
+                    issue_detected = True
+                    level = i
+
+            if issue_detected is True:
+                result.append(
+                    Issue(
+                        file=python_file,
+                        line=node.lineno,
+                        message="rewrite as: from"
+                        f" .{'.'.join(names[level:])} import"
+                        f" {', '.join(i.name for i in node.names)}",
+                    )
                 )
-            )
 
     return result
 
@@ -67,14 +77,18 @@ def main(file_or_dirs: List[Path]):
             msg = f"{file_or_dir} does not exist"
             raise ValueError(msg)
 
+    root_dir = find_project_root(file_or_dirs)
+
+    gitignore = get_gitignore(root_dir)
+
     for file_or_dir in file_or_dirs:
         if file_or_dir.is_dir():
             for python_file in file_or_dir.glob("**/*.py"):
-                if get_gitignore(Path()).match_file(python_file.relative_to(Path())):
+                if gitignore.match_file(python_file.resolve().relative_to(root_dir)):
                     continue
                 check_file(python_file)
         elif file_or_dir.is_file():
-            if get_gitignore(Path()).match_file(file_or_dir.relative_to(Path())):
+            if gitignore.match_file(file_or_dir.resolve().relative_to(root_dir)):
                 continue
             check_file(file_or_dir)
         else:
