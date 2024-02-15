@@ -43,21 +43,19 @@ def detect_issues(contents_text: str, python_file: Path, parts: List[str]) -> Li
     result: List[Issue] = []
 
     for node in file_ast.body:
-        if isinstance(node, ast.ImportFrom) and node.module is not None:
+        if isinstance(node, ast.ImportFrom) and node.module is not None and node.level == 0:
             if "." in node.module:
                 names = node.module.split(".")
             else:
                 names = [node.module]
 
-            issue_detected = False
             level: int | None = None
 
             for i in range(min(len(parts), len(names)) + 1):
                 if parts[-i:] == names[:i]:
-                    issue_detected = True
                     level = i
 
-            if issue_detected is True:
+            if level is not None:
                 result.append(
                     Issue(
                         file=python_file,

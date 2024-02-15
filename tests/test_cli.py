@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import socket
 import sys
+from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
@@ -71,3 +72,26 @@ def test_socket_file():
         assert result.stdout == ""
         assert isinstance(result.exception, ValueError) is True
         assert str(result.exception) == "sock.py must be a directory or file"
+
+
+def test_parent_and_child_modules_with_same_name():
+    """
+    .
+    ├── bar
+    │   ├── __init__.py
+    │   ├── bar.py
+    │   └── foo.py
+    └── pyproject.toml
+    """
+
+    with runner.isolated_filesystem():
+        Path("bar").mkdir()
+        Path("bar", "__init__.py").write_text("")
+        Path("bar", "bar.py").write_text("a = 1")
+        Path("bar", "foo.py").write_text("from .bar import a")
+        Path("pyproject.toml").write_text("")
+
+        result = runner.invoke(app, ["."])
+
+        assert result.exit_code == 0
+        assert result.stdout == ""
