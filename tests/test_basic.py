@@ -18,7 +18,13 @@ from absolute_to_relative_sibling import Issue, detect_issues
         (
             "from i.j import a, b as new_b, c as new_c",
             ["i"],
-            [Issue(file=Path(), line=1, message="rewrite as: from .j import a, b, c")],
+            [
+                Issue(
+                    file=Path(),
+                    line=1,
+                    message="rewrite as: from .j import a, b as new_b, c as new_c",
+                )
+            ],
         ),
         (
             "from a.b.a import i",

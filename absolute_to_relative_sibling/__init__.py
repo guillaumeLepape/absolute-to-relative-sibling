@@ -1,7 +1,7 @@
 import ast
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from typer import Typer
 
@@ -37,6 +37,20 @@ class Issue:
     message: str
 
 
+def unparse_alias(alias: ast.alias) -> str:
+    if alias.asname is None:
+        return alias.name
+
+    return f"{alias.name} as {alias.asname}"
+
+
+def unparse_import_from(node: ast.ImportFrom) -> str:
+    return (
+        f"from {'.' * node.level}{node.module} "
+        f"import {', '.join(unparse_alias(alias) for alias in node.names)}"
+    )
+
+
 def detect_issues(contents_text: str, python_file: Path, parts: List[str]) -> List[Issue]:
     file_ast = ast.parse(contents_text)
 
@@ -49,20 +63,21 @@ def detect_issues(contents_text: str, python_file: Path, parts: List[str]) -> Li
             else:
                 names = [node.module]
 
-            level: int | None = None
+            level: Optional[int] = None
 
             for i in range(min(len(parts), len(names)) + 1):
                 if parts[-i:] == names[:i]:
                     level = i
 
             if level is not None:
+                node.level = 1
+                node.module = ".".join(names[level:])
+
                 result.append(
                     Issue(
                         file=python_file,
                         line=node.lineno,
-                        message="rewrite as: from"
-                        f" .{'.'.join(names[level:])} import"
-                        f" {', '.join(i.name for i in node.names)}",
+                        message=f"rewrite as: {unparse_import_from(node)}",
                     )
                 )
 
