@@ -1,15 +1,17 @@
+from __future__ import annotations
+
 import ast
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
-from typer import Typer
+import typer
 
 from .git import find_project_root, get_gitignore
 
 __version__ = "0.1.0"
 
-app = Typer()
+app = typer.Typer()
 
 
 def read_file(path: Path) -> str:
@@ -51,10 +53,10 @@ def unparse_import_from(node: ast.ImportFrom) -> str:
     )
 
 
-def detect_issues(contents_text: str, python_file: Path, parts: List[str]) -> List[Issue]:
+def detect_issues(contents_text: str, python_file: Path, parts: list[str]) -> list[Issue]:
     file_ast = ast.parse(contents_text)
 
-    result: List[Issue] = []
+    result: list[Issue] = []
 
     for node in file_ast.body:
         if isinstance(node, ast.ImportFrom) and node.module is not None and node.level == 0:
@@ -63,7 +65,7 @@ def detect_issues(contents_text: str, python_file: Path, parts: List[str]) -> Li
             else:
                 names = [node.module]
 
-            level: Optional[int] = None
+            level: int | None = None
 
             for i in range(min(len(parts), len(names)) + 1):
                 if parts[-i:] == names[:i]:
@@ -84,7 +86,8 @@ def detect_issues(contents_text: str, python_file: Path, parts: List[str]) -> Li
     return result
 
 
-def main(file_or_dirs: List[Path]):
+@app.command()
+def main(file_or_dirs: List[Path]) -> int:  # noqa: UP006
     for file_or_dir in file_or_dirs:
         if not file_or_dir.exists():
             msg = f"{file_or_dir} does not exist"
@@ -108,8 +111,7 @@ def main(file_or_dirs: List[Path]):
             msg = f"{file_or_dir} must be a directory or file"
             raise ValueError(msg)
 
-
-app.command()(main)
+    return 0
 
 
 if __name__ == "__main__":

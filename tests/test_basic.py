@@ -56,5 +56,5 @@ from absolute_to_relative_sibling import Issue, detect_issues
         ),
     ],
 )
-def test_simple_import(input_code: str, parts: list[str], expected_issues: list[Issue]):
+def test_simple_import(input_code: str, parts: list[str], expected_issues: list[Issue]) -> None:
     assert detect_issues(input_code, Path(), parts) == expected_issues

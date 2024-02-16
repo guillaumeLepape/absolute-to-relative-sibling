@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 from pathlib import Path
 
 
-def setup_app():
+def setup_app() -> None:
     Path("foo").mkdir()
     Path("foo", "__init__.py").write_text("")
     Path("foo", "bar.py").write_text("a = 1\nb = 2*a")

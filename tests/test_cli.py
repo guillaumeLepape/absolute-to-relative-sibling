@@ -4,18 +4,19 @@ import os
 import socket
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
-from typer.testing import CliRunner
 
 from absolute_to_relative_sibling import app
 
 from .utils import setup_app
 
-runner = CliRunner()
+if TYPE_CHECKING:
+    from typer.testing import CliRunner
 
 
-def test_cli_directory():
+def test_cli_directory(runner: CliRunner) -> None:
     with runner.isolated_filesystem():
         setup_app()
 
@@ -38,7 +39,7 @@ def test_cli_directory():
         )
 
 
-def test_cli_file():
+def test_cli_file(runner: CliRunner) -> None:
     with runner.isolated_filesystem():
         setup_app()
         result = runner.invoke(app, ["foo/baz.py"])
@@ -50,18 +51,18 @@ def test_cli_file():
         )
 
 
-def test_file_not_exists():
+def test_file_not_exists(runner: CliRunner) -> None:
     with runner.isolated_filesystem():
         result = runner.invoke(app, ["not_exists.py"])
 
         assert result.exit_code == 1
-        assert result.stdout == ""
+        assert not result.stdout
         assert isinstance(result.exception, ValueError) is True
         assert str(result.exception) == "not_exists.py does not exist"
 
 
 @pytest.mark.skipif(sys.platform != "linux", reason="Only for linux")
-def test_socket_file():
+def test_socket_file(runner: CliRunner) -> None:
     with runner.isolated_filesystem():
         s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         s.bind("./sock.py")
@@ -69,12 +70,12 @@ def test_socket_file():
         result = runner.invoke(app, ["sock.py"])
 
         assert result.exit_code == 1
-        assert result.stdout == ""
+        assert not result.stdout
         assert isinstance(result.exception, ValueError) is True
         assert str(result.exception) == "sock.py must be a directory or file"
 
 
-def test_parent_and_child_modules_with_same_name():
+def test_parent_and_child_modules_with_same_name(runner: CliRunner) -> None:
     """
     .
     ├── bar
@@ -94,4 +95,4 @@ def test_parent_and_child_modules_with_same_name():
         result = runner.invoke(app, ["."])
 
         assert result.exit_code == 0
-        assert result.stdout == ""
+        assert not result.stdout

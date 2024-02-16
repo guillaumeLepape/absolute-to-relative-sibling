@@ -1,16 +1,18 @@
+from __future__ import annotations
+
 import re
 from pathlib import Path
-
-from typer.testing import CliRunner
+from typing import TYPE_CHECKING
 
 from absolute_to_relative_sibling import app
 
 from .utils import setup_app
 
-runner = CliRunner()
+if TYPE_CHECKING:
+    from typer.testing import CliRunner
 
 
-def test_git_ignore_directory():
+def test_git_ignore_directory(runner: CliRunner) -> None:
     with runner.isolated_filesystem():
         setup_app()
 
@@ -19,14 +21,14 @@ def test_git_ignore_directory():
         result = runner.invoke(app, ["."])
 
         assert result.exit_code == 0
-        assert result.stdout == ""
+        assert not result.stdout
         assert (
             Path("foo", "baz.py").read_text()
             == "from foo.toto import a\nfrom foo.toto import b as alias_b\n"
         )
 
 
-def test_git_ignore_file():
+def test_git_ignore_file(runner: CliRunner) -> None:
     with runner.isolated_filesystem():
         setup_app()
 
@@ -35,14 +37,14 @@ def test_git_ignore_file():
         result = runner.invoke(app, ["foo/bar.py", "foo/baz.py"])
 
         assert result.exit_code == 0
-        assert result.stdout == ""
+        assert not result.stdout
         assert (
             Path("foo", "baz.py").read_text()
             == "from foo.toto import a\nfrom foo.toto import b as alias_b\n"
         )
 
 
-def test_invalid_git_ignore_format():
+def test_invalid_git_ignore_format(runner: CliRunner) -> None:
     with runner.isolated_filesystem():
         setup_app()
 
@@ -51,7 +53,7 @@ def test_invalid_git_ignore_format():
         result = runner.invoke(app, ["foo/baz.py"])
 
         assert result.exit_code == 1
-        assert result.stdout == ""
+        assert not result.stdout
         assert isinstance(result.exception, ValueError) is True
         assert re.match(
             r"Could not parse .+\.gitignore: Invalid git pattern: '!'",
