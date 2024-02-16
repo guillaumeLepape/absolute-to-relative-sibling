@@ -17,6 +17,15 @@ if TYPE_CHECKING:
 
 
 def test_cli_directory(runner: CliRunner) -> None:
+    """
+    .
+    ├── foo
+    │   ├── __init__.py
+    │   ├── bar.py
+    │   └── baz.py
+    └── pyproject.toml
+    """
+
     with runner.isolated_filesystem():
         setup_app()
 
@@ -40,6 +49,15 @@ def test_cli_directory(runner: CliRunner) -> None:
 
 
 def test_cli_file(runner: CliRunner) -> None:
+    """
+    .
+    ├── foo
+    │   ├── __init__.py
+    │   ├── bar.py
+    │   └── baz.py
+    └── pyproject.toml
+    """
+
     with runner.isolated_filesystem():
         setup_app()
         result = runner.invoke(app, ["foo/baz.py"])
@@ -52,6 +70,10 @@ def test_cli_file(runner: CliRunner) -> None:
 
 
 def test_file_not_exists(runner: CliRunner) -> None:
+    """
+    .
+    """
+
     with runner.isolated_filesystem():
         result = runner.invoke(app, ["not_exists.py"])
 
@@ -63,6 +85,11 @@ def test_file_not_exists(runner: CliRunner) -> None:
 
 @pytest.mark.skipif(sys.platform != "linux", reason="Only for linux")
 def test_socket_file(runner: CliRunner) -> None:
+    """
+    .
+    └── sock.py
+    """
+
     with runner.isolated_filesystem():
         s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         s.bind("./sock.py")
@@ -91,6 +118,39 @@ def test_parent_and_child_modules_with_same_name(runner: CliRunner) -> None:
         Path("bar", "bar.py").write_text("a = 1")
         Path("bar", "foo.py").write_text("from .bar import a")
         Path("pyproject.toml").write_text("")
+
+        result = runner.invoke(app, ["."])
+
+        assert result.exit_code == 0
+        assert not result.stdout
+
+
+def test_dddd(runner: CliRunner) -> None:
+    """
+    .
+    └── component
+        ├── __init__.py
+        ├── c
+        │   ├── __init__.py
+        │   └── helpers
+        │       ├── __init__.py
+        │       └── b.py
+        └── helpers
+            ├── __init__.py
+            └── a.py
+    """
+
+    with runner.isolated_filesystem():
+        Path("component").mkdir()
+        Path("component", "__init__.py").write_text("")
+        Path("component", "c").mkdir()
+        Path("component", "c", "__init__.py").write_text("")
+        Path("component", "c", "helpers").mkdir()
+        Path("component", "c", "helpers", "__init__.py").write_text("")
+        Path("component", "c", "helpers", "b.py").write_text("from helpers.a import i\n\nprint(i)")
+        Path("component", "helpers").mkdir()
+        Path("component", "helpers", "__init__.py").write_text("")
+        Path("component", "helpers", "a.py").write_text("i = 1")
 
         result = runner.invoke(app, ["."])
 
