@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from pathlib import Path
-from typing import List, Sequence
+from typing import Sequence
 
 from pathspec import PathSpec
 from pathspec.patterns.gitwildmatch import GitWildMatchPatternError
@@ -9,7 +11,7 @@ def get_gitignore(root: Path) -> PathSpec:
     """Return a PathSpec matching gitignore content if present."""
     gitignore = root / ".gitignore"
 
-    lines: List[str] = []
+    lines: list[str] = []
 
     if gitignore.is_file():
         with gitignore.open(encoding="utf-8") as gf:
