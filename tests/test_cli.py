@@ -24,7 +24,7 @@ def test_cli_directory():
         assert result.exit_code == 0
         assert result.stdout == (
             f"foo{os.sep}baz.py:1 - rewrite as: from .toto import a\n"
-            f"foo{os.sep}baz.py:2 - rewrite as: from .toto import b\n"
+            f"foo{os.sep}baz.py:2 - rewrite as: from .toto import b as alias_b\n"
         )
 
         os.chdir("foo")
@@ -34,7 +34,7 @@ def test_cli_directory():
         assert result.exit_code == 0
         assert result.stdout == (
             "baz.py:1 - rewrite as: from .toto import a\n"
-            "baz.py:2 - rewrite as: from .toto import b\n"
+            "baz.py:2 - rewrite as: from .toto import b as alias_b\n"
         )
 
 
@@ -46,7 +46,7 @@ def test_cli_file():
         assert result.exit_code == 0
         assert result.stdout == (
             f"foo{os.sep}baz.py:1 - rewrite as: from .toto import a\n"
-            f"foo{os.sep}baz.py:2 - rewrite as: from .toto import b\n"
+            f"foo{os.sep}baz.py:2 - rewrite as: from .toto import b as alias_b\n"
         )
 
 
