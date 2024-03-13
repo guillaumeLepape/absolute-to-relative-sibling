@@ -52,4 +52,7 @@ def test_invalid_git_ignore_format():
         assert result.exit_code == 1
         assert result.stdout == ""
         assert isinstance(result.exception, ValueError) is True
-        assert str(result.exception) == "Could not parse .gitignore: Invalid git pattern: '!'"
+        assert (
+            str(result.exception)
+            == f"Could not parse {Path.cwd() / '.gitignore'}: Invalid git pattern: '!'"
+        )

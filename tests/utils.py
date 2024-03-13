@@ -2,6 +2,7 @@ from pathlib import Path
 
 
 def setup_app():
+    Path("pyproject.toml").write_text("")
     Path("foo").mkdir()
     Path("foo", "__init__.py").write_text("")
     Path("foo", "bar.py").write_text("a = 1\nb = 2*a")

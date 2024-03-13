@@ -1,11 +1,14 @@
 import ast
 from pathlib import Path
-from typing import List, Tuple
+from typing import TYPE_CHECKING, List, Tuple
 
 import tokenize_rt
 from typer import Typer
 
-from .git import get_gitignore
+from .git import find_project_root, get_gitignore
+
+if TYPE_CHECKING:
+    from pathspec import PathSpec
 
 __version__ = "0.1.0"
 
@@ -87,25 +90,39 @@ def replace_tokens_import(
     return new_tokens, is_fixed
 
 
-def main(file_or_dirs: List[Path]):
-    for file_or_dir in file_or_dirs:
+def format_file(filename: Path, root: Path, gitignore: "PathSpec") -> None:
+    if gitignore.match_file(filename.relative_to(root)):
+        return
+    replace_tokens(filename)
+
+
+def iterate_files(srcs: List[Path], gitignore: "PathSpec", root: Path):
+    for file_or_dir in srcs:
+        if file_or_dir.is_dir():
+            for python_file in file_or_dir.glob("**/*.py"):
+                format_file(python_file, root, gitignore)
+        elif file_or_dir.is_file():
+            format_file(file_or_dir, root, gitignore)
+        else:
+            msg = f"{file_or_dir} must be a directory or file"
+            raise ValueError(msg)
+
+
+def main(srcs: List[Path]):
+    for file_or_dir in srcs:
         if not file_or_dir.exists():
             msg = f"{file_or_dir} does not exist"
             raise ValueError(msg)
 
-    for file_or_dir in file_or_dirs:
-        if file_or_dir.is_dir():
-            for python_file in file_or_dir.glob("**/*.py"):
-                if get_gitignore(Path()).match_file(python_file.relative_to(Path())):
-                    continue
-                replace_tokens(python_file)
-        elif file_or_dir.is_file():
-            if get_gitignore(Path()).match_file(file_or_dir.relative_to(Path())):
-                continue
-            replace_tokens(file_or_dir)
-        else:
-            msg = f"{file_or_dir} must be a directory or file"
-            raise ValueError(msg)
+    root, _ = find_project_root(srcs)
+
+    print(root)
+
+    gitignore = get_gitignore(root)
+
+    srcs = [Path(src).resolve() for src in srcs]
+
+    iterate_files(srcs, gitignore, root)
 
 
 app.command()(main)
